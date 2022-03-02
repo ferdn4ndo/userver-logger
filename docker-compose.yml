@@ -1,0 +1,137 @@
+version: '3'
+services:
+  loki:
+    container_name: userver-loki
+    image: grafana/loki:2.4.2
+    #user: "${LOKI_UID}:${ÇPLGID}"
+    expose:
+      - 3100
+    volumes:
+      - ./loki/config:/etc/loki/config
+      - ./loki/index:/opt/loki/index
+      - ./loki/chunks:/opt/loki/chunks
+    env_file:
+      - ./loki/.env
+    command: -config.expand-env -config.file=/etc/loki/config/loki-config.yaml
+#    healthcheck:
+#      test: ["CMD", "curl", "-s", "-f", "http://userver-loki:3100/"]
+#      retries: 6
+
+  promtail:
+    container_name: userver-promtail
+    image: grafana/promtail:2.4.2
+    volumes:
+      - ./promtail/config:/etc/promtail/config
+      - ./promtail/logs:/var/logs
+      - ./log_files:/logs
+    env_file:
+      - ./promtail/.env
+    command: -config.expand-env=true -config.file=/etc/promtail/config/promtail-config.yaml
+
+  grafana:
+    container_name: userver-grafana
+    image: grafana/grafana:latest
+    expose:
+      - 3000
+    env_file:
+      - ./grafana/.env
+
+  container_monitor:
+    container_name: userver-container-monitor
+    build:
+      context: ./container_monitor
+      dockerfile: Dockerfile
+    volumes:
+      - ./container_monitor/data:/opt/monitor/data
+      - ./container_monitor/scripts:/opt/monitor/scripts
+      - ./log_files:/opt/monitor/logs
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ./container_monitor/.env
+
+#
+#
+#
+#  elasticsearch:
+#    container_name: userver-elasticsearch
+#    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+#    expose:
+#      - 9200
+#    env_file:
+#      - ./elastic/.env
+#    healthcheck:
+#      test: ["CMD", "curl","-s" ,"-f", "-u", "elastic:${ELASTIC_PASSWORD}", "http://userver-elasticsearch:9200/_cat/health"]
+#
+#  kibana:
+#    container_name: userver-kibana
+#    image: docker.elastic.co/kibana/kibana:7.17.0
+#    volumes:
+#      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
+#    expose:
+#      - 5601
+#    env_file:
+#      - ./kibana/.env
+#    depends_on:
+#      - elasticsearch
+#    healthcheck:
+#      test: ["CMD", "curl", "-s", "-f", "http://userver-kibana:5601/login"]
+#      retries: 6
+#
+##  logger:
+##    container_name: userver-logger
+##    build:
+##      context: logger
+##    env_file:
+##      - ./logger/.env
+##    expose:
+##      - 8080
+#
+#  # How to Tune Elastic Beats Performance: A Practical Example with Batch Size, Worker Count, and More
+#  # https://www.elastic.co/blog/how-to-tune-elastic-beats-performance-a-practical-example-with-batch-size-worker-count-and-more?blade=tw&hulk=social
+#  filebeat:
+#    image: docker.elastic.co/beats/filebeat:7.17.0
+#    container_name: userver-filebeat
+#    # Need to override user so we can access the log files, and docker.sock
+#    user: root
+#    restart: on-failure
+#    volumes:
+#      - ./filebeat/data:/usr/share/filebeat/data
+#      - /var/run/docker.sock:/var/run/docker.sock
+#      - ./filebeat/config/filebeat.yml:/usr/share/filebeat/filebeat.yml
+#
+#      # This is needed for filebeat to load container log path as specified in filebeat.yml
+#      - /var/lib/docker/containers/:/var/lib/docker/containers/:ro
+#
+#      # This is needed for filebeat to load logs for system modules
+#      - /var/log/:/var/log/:ro
+#    env_file:
+#      - ./filebeat/.env
+#    depends_on:
+#      - kibana
+#    # disable strict permission checks
+#    command: ["--strict.perms=false"]
+#    deploy:
+#      mode: global
+#
+#
+#  # Configure Stack container. This short-lived container configures the stack once Kibana and Elasticsearch are
+#  # available. More specifically, using a script it sets passwords, import dashboards, sets a default index pattern,
+#  # loads templates and pipelines
+#  configure_stack:
+#    container_name: userver-logger-configure-stack
+#    image: docker.elastic.co/beats/metricbeat:7.17.0
+#    volumes:
+#      - ./configure-stack/configure-stack.sh:/usr/local/bin/configure-stack.sh:ro
+#      - ./configure-stack/pipelines/:/usr/local/bin/pipelines/
+#      - ./configure-stack/templates/:/usr/local/bin/templates/
+#    command: ['/bin/bash', '-c', 'cat /usr/local/bin/configure-stack.sh | tr -d "\r" | bash']
+#    env_file:
+#      - ./configure-stack/.env
+#    depends_on:
+#      - elasticsearch
+#      - kibana
+
+networks:
+  default:
+    external:
+      name: nginx-proxy
