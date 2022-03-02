@@ -30,8 +30,12 @@ ingester:
 # for using boltdb-shipper-compactor
 # ref: https://github.com/grafana/loki/issues/2815
 compactor:
-  working_directory: ${STORAGE_COMPACTOR_FOLDER:/loki/boltdb-shipper-compactor}
+  working_directory: ${COMPACTOR_FOLDER:/loki/boltdb-shipper-compactor}
   shared_store: filesystem
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
 
 # Configures the chunk index schema and where it is stored.
 schema_config:
@@ -42,20 +46,20 @@ schema_config:
       schema: "v11"
       index:
         prefix: "index_"
-        period: 24h
+        period: ${INDEX_PERIOD:24h}
       chunks:
         prefix: "chunk_"
-        period: 24h
+        period: ${CHUNK_PERIOD:24h}
     - from: 2020-10-24
       store: "boltdb-shipper"
       object_store: "filesystem"
       schema: "v11"
       index:
         prefix: "index_"
-        period: 24h
+        period: ${INDEX_PERIOD:24h}
       chunks:
         prefix: "chunk_"
-        period: 24h
+        period: ${CHUNK_PERIOD:24h}
 
 # Configures where Loki will store data.
 storage_config:
@@ -63,25 +67,25 @@ storage_config:
   # required when boltdb is present in config.
   boltdb:
     # Location of BoltDB index files.
-    directory: ${STORAGE_INDEX_FOLDER:/opt/loki/index}
+    directory: ${INDEX_FOLDER:/opt/loki/index}
   # Configures data shipping in BoltDB
   boltdb_shipper:
-    active_index_directory: ${STORAGE_ACTIVE_INDEX_FOLDER:/tmp/loki/boltdb-shipper-active}
-    cache_location: ${STORAGE_CACHE_FOLDER:/tmp/loki/boltdb-shipper-cache}
-    cache_ttl: 24h # Can be increased for faster performance over longer query periods, uses more disk space
+    active_index_directory: ${ACTIVE_INDEX_FOLDER:/tmp/loki/boltdb-shipper-active}
+    cache_location: ${CACHE_FOLDER:/tmp/loki/boltdb-shipper-cache}
+    cache_ttl: ${CACHE_TTL:24h} # Can be increased for faster performance over longer query periods, uses more disk space
     shared_store: filesystem
   # Configures storing the chunks on the local filesystem. Required
   # fields only required when filesystem is present in config.
   filesystem:
     # Directory to store chunks in.
-    directory: ${STORAGE_CHUNKS_FOLDER:/opt/loki/chunks}
-
+    directory: ${CHUNKS_FOLDER:/opt/loki/chunks}
 
 # Configures limits per-tenant or globally
 limits_config:
   enforce_metric_name: false
   reject_old_samples: true
   reject_old_samples_max_age: 1h
+  retention_period: ${RETENTION_PERIOD:744h}
   # Maximum number of log entries that will be returned for a query. 0 to disable.
   # [max_entries_limit: <int> | default = 5000 ]
 
@@ -102,4 +106,4 @@ table_manager:
     provisioned_read_throughput: 0
     provisioned_write_throughput: 0
   retention_deletes_enabled: true
-  retention_period: 720h
+  retention_period: ${RETENTION_PERIOD:744h}
