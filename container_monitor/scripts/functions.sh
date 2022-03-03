@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [ "${1}" != "--source-only" ]; then
+    echo "This script is intended to be used only as an import for common functions (using the --source-only argument)"
+    exit 1
+fi
+
 # read the env variables with their default values
 LOOP_WAIT_INTERVAL="${LOOP_WAIT_INTERVAL:-5s}"
 MAX_LOG_LINES="${MAX_LOG_LINES:-1000}"
