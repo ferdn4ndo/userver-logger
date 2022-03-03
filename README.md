@@ -15,6 +15,15 @@ URL if a `VIRTUAL_HOST` environment variable is provided.
 This stack is part of the [uServer](https://github.com/ferdn4ndo/userver) project, although you can use it separately
 and according to your own needs.
 
+## Features
+
+Some of the features include:
+
+* Automatic log registration of the STDOUT of all the running containers, which is sent to `loki`;
+* Container-based logs rotation based on the total line count (configurable using the `MAX_LOG_LINES` env);
+* Integration with one nginx container to fetch the access and error logs;
+* Watching of the running containers list, logging when a container is started or stopped;
+
 ## Prepare the environment
 
 Copy the environment templates:
